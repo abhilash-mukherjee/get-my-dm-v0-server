@@ -9,7 +9,7 @@ const app = (0, express_1.default)();
 const port = process.env.PORT || 3000;
 app.use((0, cors_1.default)());
 app.get('/', (req, res) => {
-    res.send('Hello World!!!');
+    res.json({ message: 'Hello World!!!' });
 });
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
