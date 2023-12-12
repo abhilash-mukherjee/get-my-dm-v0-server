@@ -88,6 +88,10 @@ function handleLogin(req, res) {
             return res.status(403).json({ error: 'No user exists with given email' });
         }
         try {
+            const hashedPassword = crypto_1.default.createHash('sha256').update(data.password).digest('hex');
+            if (hashedPassword !== existingInfluencer.hashedPassword) {
+                return res.status(403).json({ error: 'Wrong password' });
+            }
             const token = (0, generateJWT_1.generateJWT)(existingInfluencer._id.toString(), enums_1.UserRole.Influencer);
             res.json({
                 message: `Influencer successfully loggedin`,
