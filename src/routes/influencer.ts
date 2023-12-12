@@ -8,6 +8,7 @@ export const influencerRouter = express.Router();
 influencerRouter.get('/me', (req, res) => {
     res.json({ message: 'Hello. its me' });
 })
+
 influencerRouter.post('/signup', handleSignup);
 influencerRouter.post('/login', handleLogin);
 
@@ -71,6 +72,10 @@ async function handleLogin(req: express.Request, res: express.Response) {
         return res.status(403).json({error: 'No user exists with given email'});
     }
     try{
+        const hashedPassword = crypto.createHash('sha256').update(data.password).digest('hex');
+        if(hashedPassword !== existingInfluencer.hashedPassword){
+            return res.status(403).json({error: 'Wrong password'});
+        }
         const token = generateJWT(existingInfluencer._id.toString(),UserRole.Influencer);
         res.json({
             message: `Influencer successfully loggedin`,
