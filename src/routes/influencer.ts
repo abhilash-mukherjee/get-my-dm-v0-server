@@ -1,17 +1,17 @@
 import express from "express";
-import { influencerSignupSchema, influencerLoginSchema } from "../helpers/zodSchemas";
+import { influencerSignupSchema, userLoginSchema } from "../helpers/zodSchemas";
 import { User } from '../db'
 import { UserRole } from "../helpers/enums";
 import crypto from 'crypto'
 import { generateJWT } from "../helpers/generateJWT";
+import { authenticateInfluencer } from "../middlewares/auth";
+import { handleError } from "../helpers/errorHandler";
 export const influencerRouter = express.Router();
-influencerRouter.get('/me', (req, res) => {
-    res.json({ message: 'Hello. its me' });
-})
 
 influencerRouter.post('/signup', handleSignup);
 influencerRouter.post('/login', handleLogin);
-
+influencerRouter.get('/me', authenticateInfluencer, handleMe);
+influencerRouter.get('/:slug', handleSlug);
 async function handleSignup(req: express.Request, res: express.Response) {
     const parsedInput = influencerSignupSchema.safeParse(req.body);
     if (!parsedInput.success) {
@@ -53,45 +53,69 @@ async function handleSignup(req: express.Request, res: express.Response) {
 
     }
     catch (error) {
-        if (error instanceof Error) {
-            res.status(500).json({ error: error.message });
-        } else {
-            res.status(500).json({ error: 'An unknown error occurred' });
-        }
+        handleError(error, res);
     }
 }
 
 async function handleLogin(req: express.Request, res: express.Response) {
-    const parsedInput = influencerLoginSchema.safeParse(req.body);
-    if(!parsedInput.success){
+    const parsedInput = userLoginSchema.safeParse(req.body);
+    if (!parsedInput.success) {
         return res.status(422).json({ error: parsedInput.error.message });
     }
     const data = parsedInput.data;
-    const existingInfluencer = await User.findOne({email:data.email, role: UserRole.Influencer}).exec();
-    if(!existingInfluencer){
-        return res.status(403).json({error: 'No user exists with given email'});
+    const existingInfluencer = await User.findOne({ email: data.email, role: UserRole.Influencer }).exec();
+    if (!existingInfluencer) {
+        return res.status(403).json({ error: 'No user exists with given email' });
     }
-    try{
+    try {
         const hashedPassword = crypto.createHash('sha256').update(data.password).digest('hex');
-        if(hashedPassword !== existingInfluencer.hashedPassword){
-            return res.status(403).json({error: 'Wrong password'});
+        if (hashedPassword !== existingInfluencer.hashedPassword) {
+            return res.status(403).json({ error: 'Wrong password' });
         }
-        const token = generateJWT(existingInfluencer._id.toString(),UserRole.Influencer);
+        const token = generateJWT(existingInfluencer._id.toString(), UserRole.Influencer);
         res.json({
             message: `Influencer successfully loggedin`,
             influencer: existingInfluencer,
             token
         })
     }
-    catch (error){
-        if (error instanceof Error) {
-            res.status(500).json({ error: error.message });
-        } else {
-            res.status(500).json({ error: 'An unknown error occurred' });
-        }
+    catch (error) {
+        handleError(error, res);
     }
 }
 
+async function handleMe(req: express.Request, res: express.Response) {
+    try {
+        const influencer = await User.findById(req.headers.influencerId);
+        res.json({
+            fullName: influencer?.fullName,
+            id: influencer?.id,
+            slug: influencer?.slug
+        })
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
+async function handleSlug(req: express.Request, res: express.Response) {
+    try {
+        const influencer = await User.findOne({ slug: req.params.slug, role: UserRole.Influencer }).exec();
+        if (influencer) {
+            res.json({
+                fullName: influencer.fullName,
+                bio: influencer.bio,
+                defaultMessage: influencer.defaultMessage,
+                id: influencer.id 
+            })
+        }
+        else{
+            res.status(403).json({error: 'influencer not found'})
+        }
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
 
 async function getSlugFromName(fullname: string): Promise<string> {
     var slug = fullname.toLowerCase().replace(/\s+/g, '-');

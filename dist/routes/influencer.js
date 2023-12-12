@@ -19,12 +19,13 @@ const db_1 = require("../db");
 const enums_1 = require("../helpers/enums");
 const crypto_1 = __importDefault(require("crypto"));
 const generateJWT_1 = require("../helpers/generateJWT");
+const auth_1 = require("../middlewares/auth");
+const errorHandler_1 = require("../helpers/errorHandler");
 exports.influencerRouter = express_1.default.Router();
-exports.influencerRouter.get('/me', (req, res) => {
-    res.json({ message: 'Hello. its me' });
-});
 exports.influencerRouter.post('/signup', handleSignup);
 exports.influencerRouter.post('/login', handleLogin);
+exports.influencerRouter.get('/me', auth_1.authenticateInfluencer, handleMe);
+exports.influencerRouter.get('/:slug', handleSlug);
 function handleSignup(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const parsedInput = zodSchemas_1.influencerSignupSchema.safeParse(req.body);
@@ -67,18 +68,13 @@ function handleSignup(req, res) {
             }
         }
         catch (error) {
-            if (error instanceof Error) {
-                res.status(500).json({ error: error.message });
-            }
-            else {
-                res.status(500).json({ error: 'An unknown error occurred' });
-            }
+            (0, errorHandler_1.handleError)(error, res);
         }
     });
 }
 function handleLogin(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
-        const parsedInput = zodSchemas_1.influencerLoginSchema.safeParse(req.body);
+        const parsedInput = zodSchemas_1.userLoginSchema.safeParse(req.body);
         if (!parsedInput.success) {
             return res.status(422).json({ error: parsedInput.error.message });
         }
@@ -100,12 +96,43 @@ function handleLogin(req, res) {
             });
         }
         catch (error) {
-            if (error instanceof Error) {
-                res.status(500).json({ error: error.message });
+            (0, errorHandler_1.handleError)(error, res);
+        }
+    });
+}
+function handleMe(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const influencer = yield db_1.User.findById(req.headers.influencerId);
+            res.json({
+                fullName: influencer === null || influencer === void 0 ? void 0 : influencer.fullName,
+                id: influencer === null || influencer === void 0 ? void 0 : influencer.id,
+                slug: influencer === null || influencer === void 0 ? void 0 : influencer.slug
+            });
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
+        }
+    });
+}
+function handleSlug(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const influencer = yield db_1.User.findOne({ slug: req.params.slug, role: enums_1.UserRole.Influencer }).exec();
+            if (influencer) {
+                res.json({
+                    fullName: influencer.fullName,
+                    bio: influencer.bio,
+                    defaultMessage: influencer.defaultMessage,
+                    id: influencer.id
+                });
             }
             else {
-                res.status(500).json({ error: 'An unknown error occurred' });
+                res.status(403).json({ error: 'influencer not found' });
             }
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
         }
     });
 }

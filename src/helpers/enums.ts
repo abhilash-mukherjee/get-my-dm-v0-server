@@ -1,4 +1,4 @@
 export enum UserRole {
     Influencer = "Influencer",
-    User = "Follower"
+    Follower = "Follower"
   }

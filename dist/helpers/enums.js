@@ -4,5 +4,5 @@ exports.UserRole = void 0;
 var UserRole;
 (function (UserRole) {
     UserRole["Influencer"] = "Influencer";
-    UserRole["User"] = "Follower";
+    UserRole["Follower"] = "Follower";
 })(UserRole || (exports.UserRole = UserRole = {}));
