@@ -18,11 +18,13 @@ const zodSchemas_1 = require("../helpers/zodSchemas");
 const db_1 = require("../db");
 const enums_1 = require("../helpers/enums");
 const crypto_1 = __importDefault(require("crypto"));
+const generateJWT_1 = require("../helpers/generateJWT");
 exports.influencerRouter = express_1.default.Router();
 exports.influencerRouter.get('/me', (req, res) => {
     res.json({ message: 'Hello. its me' });
 });
 exports.influencerRouter.post('/signup', handleSignup);
+exports.influencerRouter.post('/login', handleLogin);
 function handleSignup(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const parsedInput = zodSchemas_1.influencerSignupSchema.safeParse(req.body);
@@ -31,7 +33,11 @@ function handleSignup(req, res) {
         }
         try {
             const data = parsedInput.data;
-            const slug = getSlugFromName(data.fullName);
+            const existingUser = yield db_1.User.findOne({ email: data.email, role: enums_1.UserRole.Influencer }).exec();
+            if (existingUser) {
+                return res.status(403).json({ error: 'User with same email already exists' });
+            }
+            const slug = yield getSlugFromName(data.fullName);
             const hashedPassword = crypto_1.default.createHash('sha256').update(data.password).digest('hex');
             const newInfluencer = new db_1.User({
                 fullName: data.fullName,
@@ -43,9 +49,50 @@ function handleSignup(req, res) {
                 slug
             });
             yield newInfluencer.save();
+            try {
+                var token = (0, generateJWT_1.generateJWT)(newInfluencer._id.toString(), enums_1.UserRole.Influencer);
+                res.json({
+                    message: `Influencer successfully created`,
+                    newInfluencer,
+                    token
+                });
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    res.status(500).json({ error: error.message });
+                }
+                else {
+                    res.status(500).json({ error: 'An unknown error occurred' });
+                }
+            }
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                res.status(500).json({ error: error.message });
+            }
+            else {
+                res.status(500).json({ error: 'An unknown error occurred' });
+            }
+        }
+    });
+}
+function handleLogin(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const parsedInput = zodSchemas_1.influencerLoginSchema.safeParse(req.body);
+        if (!parsedInput.success) {
+            return res.status(422).json({ error: parsedInput.error.message });
+        }
+        const data = parsedInput.data;
+        const existingInfluencer = yield db_1.User.findOne({ email: data.email, role: enums_1.UserRole.Influencer }).exec();
+        if (!existingInfluencer) {
+            return res.status(403).json({ error: 'No user exists with given email' });
+        }
+        try {
+            const token = (0, generateJWT_1.generateJWT)(existingInfluencer._id.toString(), enums_1.UserRole.Influencer);
             res.json({
-                message: `Influencer successfully created`,
-                newInfluencer
+                message: `Influencer successfully loggedin`,
+                influencer: existingInfluencer,
+                token
             });
         }
         catch (error) {
@@ -59,5 +106,13 @@ function handleSignup(req, res) {
     });
 }
 function getSlugFromName(fullname) {
-    return fullname.toLowerCase().replace(/\s+/g, '-');
+    return __awaiter(this, void 0, void 0, function* () {
+        var slug = fullname.toLowerCase().replace(/\s+/g, '-');
+        const existingUser = yield db_1.User.findOne({ slug }).exec();
+        if (existingUser) {
+            return slug + Date.now();
+        }
+        else
+            return slug;
+    });
 }

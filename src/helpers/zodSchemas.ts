@@ -6,3 +6,7 @@ export const influencerSignupSchema = z.object({
     bio : z.string().min(5).max(40),
     defaultMessage : z.string().min(50).max(2000),
 })
+export const influencerLoginSchema = z.object({
+    email : z.string().email().min(5).max(40), 
+    password : z.string().min(6).max(30), 
+})
