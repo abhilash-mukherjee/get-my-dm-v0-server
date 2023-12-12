@@ -1,11 +1,8 @@
 import mongoose from "mongoose";
-enum UserRole {
-    Influencer = "Influencer",
-    User = "Follower"
-  }
+import { UserRole } from "../helpers/enums";
 const userSchema = new mongoose.Schema({
     email: {type: String, required: true},
-    password: {type: String, required: true},
+    hashedPassword: {type: String, required: true},
     fullName: {type: String, required: true},
     role: { type: String, required: true, enum: Object.values(UserRole) },
     bio: {type: String},
