@@ -21,10 +21,12 @@ const crypto_1 = __importDefault(require("crypto"));
 const generateJWT_1 = require("../helpers/generateJWT");
 const auth_1 = require("../middlewares/auth");
 const errorHandler_1 = require("../helpers/errorHandler");
+const messageHelper_1 = require("../helpers/messageHelper");
 exports.influencerRouter = express_1.default.Router();
 exports.influencerRouter.post('/signup', handleSignup);
 exports.influencerRouter.post('/login', handleLogin);
 exports.influencerRouter.get('/me', auth_1.authenticateInfluencer, handleMe);
+exports.influencerRouter.post('/send', auth_1.authenticateInfluencer, handleSend);
 exports.influencerRouter.get('/:slug', handleSlug);
 function handleSignup(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -130,6 +132,36 @@ function handleSlug(req, res) {
             else {
                 res.status(403).json({ error: 'influencer not found' });
             }
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
+        }
+    });
+}
+function handleSend(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const parsedInput = zodSchemas_1.influencerSendSchema.safeParse(req.body);
+            if (!parsedInput.success)
+                return (0, errorHandler_1.sendErrorResponse)(res, parsedInput.error.message, 422);
+            const influencerId = req.headers.influencerId;
+            const { followerId, content } = parsedInput.data;
+            const follower = yield db_1.User.findById(followerId);
+            if (!follower || follower.role !== enums_1.UserRole.Follower) {
+                return (0, errorHandler_1.sendErrorResponse)(res, 'Follower does not exist', 403);
+            }
+            var convo = yield db_1.Conversation.findOne({
+                influencer: influencerId,
+                follower: followerId
+            });
+            if (!convo) {
+                return (0, errorHandler_1.sendErrorResponse)(res, 'Cant send first message as influencer', 403);
+            }
+            const newMessage = yield (0, messageHelper_1.addNewMessageToDB)(content, influencerId, followerId, convo.id);
+            convo.latestMessage = newMessage.id;
+            convo = yield convo.save();
+            const messages = yield db_1.Message.find({ conversation: convo.id }).sort({ timestamp: 1 });
+            res.json({ messages });
         }
         catch (error) {
             (0, errorHandler_1.handleError)(error, res);

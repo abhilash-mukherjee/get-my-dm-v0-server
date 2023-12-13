@@ -1,16 +1,18 @@
 import express from "express";
-import { influencerSignupSchema, userLoginSchema } from "../helpers/zodSchemas";
-import { User } from '../db'
+import { influencerSendSchema, influencerSignupSchema, userLoginSchema } from "../helpers/zodSchemas";
+import { Conversation, Message, User } from '../db'
 import { UserRole } from "../helpers/enums";
 import crypto from 'crypto'
 import { generateJWT } from "../helpers/generateJWT";
 import { authenticateInfluencer } from "../middlewares/auth";
-import { handleError } from "../helpers/errorHandler";
+import { handleError, sendErrorResponse } from "../helpers/errorHandler";
+import { addNewMessageToDB } from "../helpers/messageHelper";
 export const influencerRouter = express.Router();
 
 influencerRouter.post('/signup', handleSignup);
 influencerRouter.post('/login', handleLogin);
 influencerRouter.get('/me', authenticateInfluencer, handleMe);
+influencerRouter.post('/send', authenticateInfluencer, handleSend);
 influencerRouter.get('/:slug', handleSlug);
 async function handleSignup(req: express.Request, res: express.Response) {
     const parsedInput = influencerSignupSchema.safeParse(req.body);
@@ -105,17 +107,47 @@ async function handleSlug(req: express.Request, res: express.Response) {
                 fullName: influencer.fullName,
                 bio: influencer.bio,
                 defaultMessage: influencer.defaultMessage,
-                id: influencer.id 
+                id: influencer.id
             })
         }
-        else{
-            res.status(403).json({error: 'influencer not found'})
+        else {
+            res.status(403).json({ error: 'influencer not found' })
         }
     }
     catch (error) {
         handleError(error, res);
     }
 }
+
+async function handleSend(req: express.Request, res: express.Response) {
+    try {
+        const parsedInput = influencerSendSchema.safeParse(req.body);
+        if (!parsedInput.success) return sendErrorResponse(res, parsedInput.error.message, 422);
+        const influencerId = req.headers.influencerId as string;
+        const { followerId, content } = parsedInput.data;
+        const follower = await User.findById(followerId);
+        if (!follower || follower.role !== UserRole.Follower) {
+            return sendErrorResponse(res, 'Follower does not exist', 403);
+        }
+        var convo = await Conversation.findOne({
+            influencer: influencerId,
+            follower: followerId
+        });
+        if (!convo) {
+            return sendErrorResponse(res,'Cant send first message as influencer', 403);
+        }
+        const newMessage = await addNewMessageToDB(content, influencerId, followerId, convo.id);
+        convo.latestMessage = newMessage.id;
+        convo = await convo.save();
+        const messages = await Message.find({ conversation: convo.id }).sort({ timestamp: 1 });
+        res.json({ messages });
+
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
+
 
 async function getSlugFromName(fullname: string): Promise<string> {
     var slug = fullname.toLowerCase().replace(/\s+/g, '-');
