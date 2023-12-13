@@ -36,3 +36,7 @@ export const influencerSendSchema = z.object({
 export const influencerGetConvoSchema = z.object({
     followerId: z.string().max(100),
 })
+
+export const getConverationRequestParamsSchema = z.object({
+    followerId: z.string().min(1).max(50)
+})

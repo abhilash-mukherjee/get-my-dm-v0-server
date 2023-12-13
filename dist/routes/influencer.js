@@ -28,6 +28,7 @@ exports.influencerRouter.post('/login', handleLogin);
 exports.influencerRouter.get('/me', auth_1.authenticateInfluencer, handleMe);
 exports.influencerRouter.post('/send', auth_1.authenticateInfluencer, handleSend);
 exports.influencerRouter.get('/conversations', auth_1.authenticateInfluencer, handleConversations);
+exports.influencerRouter.get('/conversations/:followerId', auth_1.authenticateInfluencer, handleConversationsId);
 exports.influencerRouter.get('/:slug', handleSlug);
 function handleSignup(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -184,7 +185,6 @@ function handleConversations(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const influencerId = req.headers.influencerId;
-            console.log(influencerId);
             var conversations = yield db_1.Conversation.find({
                 influencer: influencerId,
             }).sort({ updated_at: 1 });
@@ -208,6 +208,32 @@ function handleConversations(req, res) {
             }));
             const formattedConversations = yield Promise.all(formattedConversationsPromises);
             res.json({ conversations: formattedConversations });
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
+        }
+    });
+}
+function handleConversationsId(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const parsedParams = zodSchemas_1.getConverationRequestParamsSchema.safeParse(req.params);
+            if (!parsedParams.success) {
+                console.log('inside parsedparams error');
+                return (0, errorHandler_1.sendErrorResponse)(res, parsedParams.error.message, 422);
+            }
+            const influencerId = req.headers.influencerId;
+            const followerId = parsedParams.data.followerId;
+            const convo = yield db_1.Conversation.findOne({
+                influencer: influencerId,
+                follower: followerId
+            });
+            if (!convo)
+                return (0, errorHandler_1.sendErrorResponse)(res, 'Convo doesnt exist', 404);
+            const messages = yield db_1.Message.find({
+                conversation: convo.id
+            }).sort({ timestamp: 1 });
+            res.json({ messages });
         }
         catch (error) {
             (0, errorHandler_1.handleError)(error, res);

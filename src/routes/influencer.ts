@@ -1,5 +1,5 @@
 import express from "express";
-import { influencerSendSchema, influencerSignupSchema, userLoginSchema, influencerGetConvoSchema } from "../helpers/zodSchemas";
+import { influencerSendSchema, influencerSignupSchema, userLoginSchema, getConverationRequestParamsSchema } from "../helpers/zodSchemas";
 import { Conversation, Message, User } from '../db'
 import { UserRole } from "../helpers/enums";
 import crypto from 'crypto'
@@ -14,6 +14,7 @@ influencerRouter.post('/login', handleLogin);
 influencerRouter.get('/me', authenticateInfluencer, handleMe);
 influencerRouter.post('/send', authenticateInfluencer, handleSend);
 influencerRouter.get('/conversations', authenticateInfluencer, handleConversations);
+influencerRouter.get('/conversations/:followerId', authenticateInfluencer, handleConversationsId);
 influencerRouter.get('/:slug', handleSlug);
 async function handleSignup(req: express.Request, res: express.Response) {
     const parsedInput = influencerSignupSchema.safeParse(req.body);
@@ -158,10 +159,10 @@ async function getSlugFromName(fullname: string): Promise<string> {
     }
     else return slug;
 }
+
 async function handleConversations(req: express.Request, res: express.Response) {
     try {
         const influencerId = req.headers.influencerId as string;
-        console.log(influencerId)
         var conversations = await Conversation.find({
             influencer: influencerId,
         }).sort({ updated_at: 1 });
@@ -190,3 +191,29 @@ async function handleConversations(req: express.Request, res: express.Response) 
         handleError(error, res);
     }
 }
+
+
+async function handleConversationsId(req: express.Request, res: express.Response) {
+    try {
+        const parsedParams = getConverationRequestParamsSchema.safeParse(req.params);
+        if (!parsedParams.success) {
+            console.log('inside parsedparams error');
+            return sendErrorResponse(res, parsedParams.error.message, 422);
+        }
+        const influencerId = req.headers.influencerId as string;
+        const followerId = parsedParams.data.followerId;
+        const convo = await Conversation.findOne({
+            influencer: influencerId,
+            follower: followerId
+        });
+        if (!convo) return sendErrorResponse(res, 'Convo doesnt exist', 404);
+        const messages = await Message.find({
+            conversation: convo.id
+        }).sort({ timestamp: 1 });
+        res.json({ messages });
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
+

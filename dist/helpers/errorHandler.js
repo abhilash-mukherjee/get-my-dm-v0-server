@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendErrorResponse = exports.handleError = void 0;
 function handleError(error, res) {
-    console.log('inside handleerror');
     if (error instanceof Error) {
         res.status(500).json({ error: error.message });
     }
