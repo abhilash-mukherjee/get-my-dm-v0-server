@@ -23,7 +23,16 @@ export const followerSendSchema = z.object({
     content: z.string().max(3000)
 })
 
+export const followerGetConvoSchema = z.object({
+    influencerId: z.string().max(100),
+})
+
+
 export const influencerSendSchema = z.object({
     followerId: z.string().max(100),
     content: z.string().max(3000)
+})
+
+export const influencerGetConvoSchema = z.object({
+    followerId: z.string().max(100),
 })
