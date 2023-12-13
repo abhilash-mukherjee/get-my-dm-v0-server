@@ -13,7 +13,8 @@ const userSchema = new mongoose_1.default.Schema({
     role: { type: String, required: true, enum: Object.values(enums_1.UserRole) },
     bio: { type: String },
     defaultMessage: { type: String },
-    slug: { type: String, unique: true },
+    slug: { type: String, unique: true, sparse: true, default: null,
+        set: (v) => v === '' ? null : v },
 });
 const messageSchema = new mongoose_1.default.Schema({
     sender: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },

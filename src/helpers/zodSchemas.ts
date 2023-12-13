@@ -18,4 +18,8 @@ export const userLoginSchema = z.object({
 export const headerSchema = z.object({
     authorization: z.string()
 })
-
+export const sendDMSchema = z.object({
+    senderId: z.string().max(100),
+    receiverId: z.string().max(100),
+    content: z.string().max(3000)
+})

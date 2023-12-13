@@ -45,6 +45,9 @@ function authenticateInfluencer(req, res, next) {
                     res.status(403).json({ error: "Couldn't find influencer" });
                 }
             }
+            else {
+                res.status(403).json({ error: "Couldn't verify using token" });
+            }
         }
         catch (error) {
             (0, errorHandler_1.handleError)(error, res);
@@ -56,12 +59,11 @@ function authenticateFollower(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         const parsedHeader = zodSchemas_1.headerSchema.safeParse(req.headers);
         if (!parsedHeader.success) {
-            return res.status(403).json({ error: parsedHeader.error.message });
+            return sendErrorResponse(res, parsedHeader.error.message, 403);
         }
         const token = getAuthToken(parsedHeader.data.authorization);
-        if (!token) {
-            return res.status(403).json({ error: 'Invalid auth token' });
-        }
+        if (!token)
+            return sendErrorResponse(res, "Invalid auth token", 403);
         try {
             if (!process.env.FOLLOWER_SK) {
                 throw new Error('Secret keys are not set');
@@ -76,8 +78,11 @@ function authenticateFollower(req, res, next) {
                     next();
                 }
                 else {
-                    res.status(403).json({ error: "Couldn't find user" });
+                    return sendErrorResponse(res, "Couldn't find user", 403);
                 }
+            }
+            else {
+                return sendErrorResponse(res, "Couldn't verify using token", 403);
             }
         }
         catch (error) {
@@ -88,4 +93,7 @@ function authenticateFollower(req, res, next) {
 exports.authenticateFollower = authenticateFollower;
 function getAuthToken(authorization) {
     return authorization.split(' ')[1];
+}
+function sendErrorResponse(res, message, status) {
+    return res.status(status).json({ error: message });
 }

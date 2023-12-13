@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
     role: { type: String, required: true, enum: Object.values(UserRole) },
     bio: {type: String},
     defaultMessage: {type: String},
-    slug: {type: String, unique: true},
+    slug: {type: String, unique: true, sparse: true, default: null, 
+        set: (v : string) => v === '' ? null : v },
 });
 
 const messageSchema = new mongoose.Schema({

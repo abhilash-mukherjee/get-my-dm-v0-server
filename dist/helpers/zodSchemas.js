@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.headerSchema = exports.userLoginSchema = exports.followerSignupSchema = exports.influencerSignupSchema = void 0;
+exports.sendDMSchema = exports.headerSchema = exports.userLoginSchema = exports.followerSignupSchema = exports.influencerSignupSchema = void 0;
 const zod_1 = require("zod");
 exports.influencerSignupSchema = zod_1.z.object({
     fullName: zod_1.z.string().min(2).max(30),
@@ -20,4 +20,9 @@ exports.userLoginSchema = zod_1.z.object({
 });
 exports.headerSchema = zod_1.z.object({
     authorization: zod_1.z.string()
+});
+exports.sendDMSchema = zod_1.z.object({
+    senderId: zod_1.z.string().max(100),
+    receiverId: zod_1.z.string().max(100),
+    content: zod_1.z.string().max(3000)
 });
