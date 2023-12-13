@@ -26,6 +26,7 @@ exports.followerRouter = express_1.default.Router();
 exports.followerRouter.post('/signup', handleSignup);
 exports.followerRouter.post('/login', handleLogin);
 exports.followerRouter.post('/send', auth_1.authenticateFollower, handleSend);
+exports.followerRouter.get('/conversation', auth_1.authenticateFollower, handleConversation);
 function handleSignup(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const parsedInput = zodSchemas_1.followerSignupSchema.safeParse(req.body);
@@ -113,6 +114,28 @@ function handleSend(req, res) {
             const newMessage = yield (0, messageHelper_1.addNewMessageToDB)(content, followerId, influencerId, convo.id);
             convo.latestMessage = newMessage.id;
             convo = yield convo.save();
+            const messages = yield db_1.Message.find({ conversation: convo.id }).sort({ timestamp: 1 });
+            res.json({ messages });
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
+        }
+    });
+}
+function handleConversation(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const parsedInput = zodSchemas_1.followerGetConvoSchema.safeParse(req.body);
+            if (!parsedInput.success)
+                return (0, errorHandler_1.sendErrorResponse)(res, parsedInput.error.message, 422);
+            const followerId = req.headers.followerId;
+            const influencerId = parsedInput.data.influencerId;
+            const convo = yield db_1.Conversation.findOne({
+                influencer: influencerId,
+                follower: followerId
+            });
+            if (!convo)
+                return (0, errorHandler_1.sendErrorResponse)(res, 'No conversation yet', 404);
             const messages = yield db_1.Message.find({ conversation: convo.id }).sort({ timestamp: 1 });
             res.json({ messages });
         }

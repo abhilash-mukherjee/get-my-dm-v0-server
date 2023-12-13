@@ -35,7 +35,6 @@ function authenticateInfluencer(req, res, next) {
             const decoded = jsonwebtoken_1.default.verify(token, process.env.INFLUENCER_SK);
             const decodedPayload = decoded;
             if (decodedPayload) {
-                console.log(decodedPayload);
                 const influencer = yield db_1.User.findById(decodedPayload.userId);
                 if (influencer && influencer.role === enums_1.UserRole.Influencer) {
                     req.headers['influencerId'] = influencer._id.toString();

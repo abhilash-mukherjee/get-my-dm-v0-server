@@ -21,7 +21,6 @@ export async function authenticateInfluencer(req: Request, res: Response, next: 
         const decoded = jwt.verify(token, process.env.INFLUENCER_SK);
         const decodedPayload = decoded as JwtPayload;
         if (decodedPayload) {
-            console.log(decodedPayload);
             const influencer = await User.findById(decodedPayload.userId);
             if (influencer && influencer.role === UserRole.Influencer) {
                 req.headers['influencerId'] = influencer._id.toString();

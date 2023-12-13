@@ -1,5 +1,5 @@
 import express from "express";
-import { followerSignupSchema, userLoginSchema, followerSendSchema } from "../helpers/zodSchemas";
+import { followerSignupSchema, userLoginSchema, followerSendSchema, followerGetConvoSchema } from "../helpers/zodSchemas";
 import { Conversation, Message, User } from '../db'
 import { UserRole } from "../helpers/enums";
 import { addNewMessageToDB, addNewConvoToDB } from "../helpers/messageHelper";
@@ -11,6 +11,7 @@ export const followerRouter = express.Router();
 followerRouter.post('/signup', handleSignup);
 followerRouter.post('/login', handleLogin);
 followerRouter.post('/send', authenticateFollower, handleSend);
+followerRouter.get('/conversation', authenticateFollower, handleConversation);
 
 async function handleSignup(req: express.Request, res: express.Response) {
     const parsedInput = followerSignupSchema.safeParse(req.body);
@@ -98,6 +99,25 @@ async function handleSend(req: express.Request, res: express.Response) {
         const messages = await Message.find({conversation: convo.id}).sort({ timestamp: 1 });
         res.json({ messages  });
 
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
+
+async function handleConversation(req: express.Request, res: express.Response) {
+    try {
+        const parsedInput = followerGetConvoSchema.safeParse(req.body);
+        if (!parsedInput.success) return sendErrorResponse(res, parsedInput.error.message, 422);
+        const followerId = req.headers.followerId as string;
+        const influencerId = parsedInput.data.influencerId;
+        const convo = await Conversation.findOne({
+            influencer: influencerId,
+            follower: followerId
+        })
+        if(!convo) return sendErrorResponse(res, 'No conversation yet', 404);
+        const messages = await Message.find({conversation: convo.id}).sort({ timestamp: 1 });
+        res.json({ messages  });
     }
     catch (error) {
         handleError(error, res);

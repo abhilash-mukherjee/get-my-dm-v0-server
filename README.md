@@ -13,5 +13,5 @@ Endpoints:
 2. follower/
     |__login/ (email, password) -> {message: loggedIn, token:}
     |__signup/ (fullname, email, password) -> {message: signedUp, token}
-    |__conversation/ (token, infId)-> {conversation: [sorted list of messages based on timeStamp]}
+    |__conversation/ (token, infId)-> {messages: [sorted list of messages based on timeStamp]}
     |___send/(token,receiverId,content)->{messgaes: [sorted list of messages]}

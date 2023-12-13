@@ -27,6 +27,7 @@ exports.influencerRouter.post('/signup', handleSignup);
 exports.influencerRouter.post('/login', handleLogin);
 exports.influencerRouter.get('/me', auth_1.authenticateInfluencer, handleMe);
 exports.influencerRouter.post('/send', auth_1.authenticateInfluencer, handleSend);
+exports.influencerRouter.get('/conversations', auth_1.authenticateInfluencer, handleConversations);
 exports.influencerRouter.get('/:slug', handleSlug);
 function handleSignup(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -177,5 +178,39 @@ function getSlugFromName(fullname) {
         }
         else
             return slug;
+    });
+}
+function handleConversations(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const influencerId = req.headers.influencerId;
+            console.log(influencerId);
+            var conversations = yield db_1.Conversation.find({
+                influencer: influencerId,
+            }).sort({ updated_at: 1 });
+            if (!conversations || conversations.length === 0) {
+                return (0, errorHandler_1.sendErrorResponse)(res, 'No conversations yet', 404);
+            }
+            const formattedConversationsPromises = conversations.map((c) => __awaiter(this, void 0, void 0, function* () {
+                if (!c.latestMessage) {
+                    return {
+                        conversation: c,
+                        latestMessage: null
+                    };
+                }
+                const msg = yield db_1.Message.findById(c.latestMessage._id);
+                const follower = yield db_1.User.findById(c.follower);
+                return {
+                    conversation: c,
+                    latestMessage: msg,
+                    follower
+                };
+            }));
+            const formattedConversations = yield Promise.all(formattedConversationsPromises);
+            res.json({ conversations: formattedConversations });
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
+        }
     });
 }

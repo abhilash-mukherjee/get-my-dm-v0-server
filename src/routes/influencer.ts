@@ -1,5 +1,5 @@
 import express from "express";
-import { influencerSendSchema, influencerSignupSchema, userLoginSchema } from "../helpers/zodSchemas";
+import { influencerSendSchema, influencerSignupSchema, userLoginSchema, influencerGetConvoSchema } from "../helpers/zodSchemas";
 import { Conversation, Message, User } from '../db'
 import { UserRole } from "../helpers/enums";
 import crypto from 'crypto'
@@ -13,6 +13,7 @@ influencerRouter.post('/signup', handleSignup);
 influencerRouter.post('/login', handleLogin);
 influencerRouter.get('/me', authenticateInfluencer, handleMe);
 influencerRouter.post('/send', authenticateInfluencer, handleSend);
+influencerRouter.get('/conversations', authenticateInfluencer, handleConversations);
 influencerRouter.get('/:slug', handleSlug);
 async function handleSignup(req: express.Request, res: express.Response) {
     const parsedInput = influencerSignupSchema.safeParse(req.body);
@@ -134,7 +135,7 @@ async function handleSend(req: express.Request, res: express.Response) {
             follower: followerId
         });
         if (!convo) {
-            return sendErrorResponse(res,'Cant send first message as influencer', 403);
+            return sendErrorResponse(res, 'Cant send first message as influencer', 403);
         }
         const newMessage = await addNewMessageToDB(content, influencerId, followerId, convo.id);
         convo.latestMessage = newMessage.id;
@@ -156,4 +157,36 @@ async function getSlugFromName(fullname: string): Promise<string> {
         return slug + Date.now();
     }
     else return slug;
+}
+async function handleConversations(req: express.Request, res: express.Response) {
+    try {
+        const influencerId = req.headers.influencerId as string;
+        console.log(influencerId)
+        var conversations = await Conversation.find({
+            influencer: influencerId,
+        }).sort({ updated_at: 1 });
+        if (!conversations || conversations.length === 0) {
+            return sendErrorResponse(res, 'No conversations yet', 404);
+        }
+        const formattedConversationsPromises = conversations.map(async (c) => {
+            if (!c.latestMessage) {
+                return {
+                    conversation: c,
+                    latestMessage: null
+                }
+            }
+            const msg = await Message.findById(c.latestMessage._id);
+            const follower = await User.findById(c.follower);
+            return {
+                conversation: c,
+                latestMessage: msg,
+                follower
+            }
+        })
+        const formattedConversations = await Promise.all(formattedConversationsPromises);
+        res.json({ conversations: formattedConversations });
+    }
+    catch (error) {
+        handleError(error, res);
+    }
 }
