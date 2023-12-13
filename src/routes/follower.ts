@@ -1,14 +1,15 @@
 import express from "express";
-import { followerSignupSchema, userLoginSchema } from "../helpers/zodSchemas";
-import { User } from '../db'
+import { followerSignupSchema, userLoginSchema, followerSendSchema } from "../helpers/zodSchemas";
+import { Conversation, Message, User } from '../db'
 import { UserRole } from "../helpers/enums";
 import crypto from 'crypto'
 import { generateJWT } from "../helpers/generateJWT";
-import { authenticateInfluencer } from "../middlewares/auth";
-import { handleError } from "../helpers/errorHandler";
+import { authenticateFollower, authenticateInfluencer } from "../middlewares/auth";
+import { handleError, sendErrorResponse } from "../helpers/errorHandler";
 export const followerRouter = express.Router();
 followerRouter.post('/signup', handleSignup);
 followerRouter.post('/login', handleLogin);
+followerRouter.post('/send', authenticateFollower, handleSend);
 
 async function handleSignup(req: express.Request, res: express.Response) {
     const parsedInput = followerSignupSchema.safeParse(req.body);
@@ -71,4 +72,58 @@ async function handleLogin(req: express.Request, res: express.Response) {
     catch (error) {
         handleError(error, res);
     }
+}
+
+async function handleSend(req: express.Request, res: express.Response) {
+    try {
+        const parsedInput = followerSendSchema.safeParse(req.body);
+        if (!parsedInput.success) return sendErrorResponse(res, parsedInput.error.message, 422);
+        const followerId = req.headers.followerId as string;
+        const { influencerId, content } = parsedInput.data;
+        const influencer = await User.findById(influencerId);
+        if(!influencer || influencer.role !== UserRole.Influencer || !influencer.defaultMessage){
+            return sendErrorResponse(res, 'Influencer does not exist', 403);
+        }
+        var convo = await Conversation.findOne({
+            influencer: influencerId,
+            follower: followerId
+        });
+        if(!convo){
+            convo = await addNewConvoToDB(influencer.defaultMessage, influencerId, followerId);
+        }
+        const newMessage = await addNewMessageToDB(content,followerId,influencerId,convo.id);
+        convo.latestMessage = newMessage.id;
+        convo = await convo.save();
+        const messages = await Message.find({conversation: convo.id}).sort({ timestamp: 1 });
+        res.json({ messages  });
+
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
+
+async function addNewConvoToDB(defaultMessage : string, influencerId : string, followerId:string){
+    var newConvo = new Conversation({
+        influencer: influencerId,
+        follower: followerId,
+        updated_at: Date.now()
+    })
+    newConvo = await newConvo.save();
+    const   newMessage = await addNewMessageToDB(defaultMessage,influencerId, followerId, newConvo.id);
+    newConvo.latestMessage = newMessage.id;
+    newConvo = await newConvo.save();
+    return newConvo;
+}
+
+async function addNewMessageToDB(content : string, senderId : string, receiverId :string, convoId : string){
+    var newMessage = new Message({
+        sender: senderId,
+        receiver: receiverId,
+        content: content,
+        timestamp: Date.now(),
+        conversation: convoId
+    });
+    newMessage = await newMessage.save();
+    return newMessage;
 }

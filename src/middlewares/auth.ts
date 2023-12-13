@@ -1,6 +1,6 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { headerSchema, sendDMSchema } from '../helpers/zodSchemas';
-import { handleError } from '../helpers/errorHandler';
+import { headerSchema } from '../helpers/zodSchemas';
+import { handleError, sendErrorResponse } from '../helpers/errorHandler';
 import { Request, Response, NextFunction } from 'express';
 import { User, Conversation, Message } from '../db';
 import { UserRole } from '../helpers/enums';
@@ -54,7 +54,6 @@ export async function authenticateFollower(req: Request, res: Response, next: Ne
         const decoded = jwt.verify(token, process.env.FOLLOWER_SK);
         const decodedPayload = decoded as JwtPayload;
         if (decodedPayload) {
-            console.log(decodedPayload);
             const follower = await User.findById(decodedPayload.userId);
             if (follower && follower.role === UserRole.Follower) {
                 req.headers['followerId'] = follower._id.toString();
@@ -78,6 +77,3 @@ function getAuthToken(authorization: string) {
 }
 
 
-function sendErrorResponse(res: Response, message: string, status: number) {
-    return res.status(status).json({ error: message });
-}

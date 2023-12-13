@@ -59,11 +59,11 @@ function authenticateFollower(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         const parsedHeader = zodSchemas_1.headerSchema.safeParse(req.headers);
         if (!parsedHeader.success) {
-            return sendErrorResponse(res, parsedHeader.error.message, 403);
+            return (0, errorHandler_1.sendErrorResponse)(res, parsedHeader.error.message, 403);
         }
         const token = getAuthToken(parsedHeader.data.authorization);
         if (!token)
-            return sendErrorResponse(res, "Invalid auth token", 403);
+            return (0, errorHandler_1.sendErrorResponse)(res, "Invalid auth token", 403);
         try {
             if (!process.env.FOLLOWER_SK) {
                 throw new Error('Secret keys are not set');
@@ -71,18 +71,17 @@ function authenticateFollower(req, res, next) {
             const decoded = jsonwebtoken_1.default.verify(token, process.env.FOLLOWER_SK);
             const decodedPayload = decoded;
             if (decodedPayload) {
-                console.log(decodedPayload);
                 const follower = yield db_1.User.findById(decodedPayload.userId);
                 if (follower && follower.role === enums_1.UserRole.Follower) {
                     req.headers['followerId'] = follower._id.toString();
                     next();
                 }
                 else {
-                    return sendErrorResponse(res, "Couldn't find user", 403);
+                    return (0, errorHandler_1.sendErrorResponse)(res, "Couldn't find user", 403);
                 }
             }
             else {
-                return sendErrorResponse(res, "Couldn't verify using token", 403);
+                return (0, errorHandler_1.sendErrorResponse)(res, "Couldn't verify using token", 403);
             }
         }
         catch (error) {
@@ -93,7 +92,4 @@ function authenticateFollower(req, res, next) {
 exports.authenticateFollower = authenticateFollower;
 function getAuthToken(authorization) {
     return authorization.split(' ')[1];
-}
-function sendErrorResponse(res, message, status) {
-    return res.status(status).json({ error: message });
 }

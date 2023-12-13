@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleError = void 0;
+exports.sendErrorResponse = exports.handleError = void 0;
 function handleError(error, res) {
-    console.log('inside error handler');
     if (error instanceof Error) {
         res.status(500).json({ error: error.message });
     }
@@ -11,3 +10,7 @@ function handleError(error, res) {
     }
 }
 exports.handleError = handleError;
+function sendErrorResponse(res, message, status) {
+    return res.status(status).json({ error: message });
+}
+exports.sendErrorResponse = sendErrorResponse;
