@@ -17,6 +17,7 @@ const express_1 = __importDefault(require("express"));
 const zodSchemas_1 = require("../helpers/zodSchemas");
 const db_1 = require("../db");
 const enums_1 = require("../helpers/enums");
+const messageHelper_1 = require("../helpers/messageHelper");
 const crypto_1 = __importDefault(require("crypto"));
 const generateJWT_1 = require("../helpers/generateJWT");
 const auth_1 = require("../middlewares/auth");
@@ -107,9 +108,9 @@ function handleSend(req, res) {
                 follower: followerId
             });
             if (!convo) {
-                convo = yield addNewConvoToDB(influencer.defaultMessage, influencerId, followerId);
+                convo = yield (0, messageHelper_1.addNewConvoToDB)(influencer.defaultMessage, influencerId, followerId);
             }
-            const newMessage = yield addNewMessageToDB(content, followerId, influencerId, convo.id);
+            const newMessage = yield (0, messageHelper_1.addNewMessageToDB)(content, followerId, influencerId, convo.id);
             convo.latestMessage = newMessage.id;
             convo = yield convo.save();
             const messages = yield db_1.Message.find({ conversation: convo.id }).sort({ timestamp: 1 });
@@ -118,32 +119,5 @@ function handleSend(req, res) {
         catch (error) {
             (0, errorHandler_1.handleError)(error, res);
         }
-    });
-}
-function addNewConvoToDB(defaultMessage, influencerId, followerId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var newConvo = new db_1.Conversation({
-            influencer: influencerId,
-            follower: followerId,
-            updated_at: Date.now()
-        });
-        newConvo = yield newConvo.save();
-        const newMessage = yield addNewMessageToDB(defaultMessage, influencerId, followerId, newConvo.id);
-        newConvo.latestMessage = newMessage.id;
-        newConvo = yield newConvo.save();
-        return newConvo;
-    });
-}
-function addNewMessageToDB(content, senderId, receiverId, convoId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var newMessage = new db_1.Message({
-            sender: senderId,
-            receiver: receiverId,
-            content: content,
-            timestamp: Date.now(),
-            conversation: convoId
-        });
-        newMessage = yield newMessage.save();
-        return newMessage;
     });
 }
