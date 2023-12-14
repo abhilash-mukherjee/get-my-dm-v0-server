@@ -11,7 +11,7 @@ function generateJWT(userId, role) {
     if (!process.env.INFLUENCER_SK || !process.env.FOLLOWER_SK) {
         throw new Error('Secret keys are not set');
     }
-    const token = jsonwebtoken_1.default.sign({ userId }, role === enums_1.UserRole.Influencer ? process.env.INFLUENCER_SK : process.env.FOLLOWER_SK, { expiresIn: '5h' });
+    const token = jsonwebtoken_1.default.sign({ userId, role }, role === enums_1.UserRole.Influencer ? process.env.INFLUENCER_SK : process.env.FOLLOWER_SK, { expiresIn: '5h' });
     return token;
 }
 exports.generateJWT = generateJWT;
