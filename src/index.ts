@@ -13,10 +13,13 @@ app.use(bodyParser.json());
 app.use('/influencer',influencerRouter);
 app.use('/follower',followerRouter);
 app.get('/', (req, res) => { res.json({ message: 'Hello World!!!' })});
-app.listen(port, () => { console.log(`Example app listening on port ${port}`)});
+
 
 if (process.env.MONGODB_URL) {
-  mongoose.connect(process.env.MONGODB_URL).then(() => console.log('connected to DB'));
+  mongoose.connect(process.env.MONGODB_URL).then(() => {
+    console.log('connected to DB');
+    app.listen(port, () => { console.log(`Example app listening on port ${port}`)});
+  });
 }
 else {
   throw new Error('MONGODB_URL is not set');
