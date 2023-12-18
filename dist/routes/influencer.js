@@ -80,7 +80,7 @@ function handleLogin(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const parsedInput = zodSchemas_1.userLoginSchema.safeParse(req.body);
         if (!parsedInput.success) {
-            return res.status(422).json({ error: parsedInput.error.message });
+            return (0, errorHandler_1.sendErrorResponse)(res, "User doesn't exist", 422);
         }
         const data = parsedInput.data;
         const existingInfluencer = yield db_1.User.findOne({ email: data.email, role: enums_1.UserRole.Influencer }).exec();

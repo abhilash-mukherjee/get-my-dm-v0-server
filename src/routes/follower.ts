@@ -52,7 +52,7 @@ async function handleSignup(req: express.Request, res: express.Response) {
 async function handleLogin(req: express.Request, res: express.Response) {
     const parsedInput = userLoginSchema.safeParse(req.body);
     if (!parsedInput.success) {
-        return res.status(422).json({ error: parsedInput.error.message });
+        return sendErrorResponse(res,"User doesn't exist", 422);
     }
     const data = parsedInput.data;
     const existingFollower = await User.findOne({ email: data.email, role: UserRole.Follower }).exec();
