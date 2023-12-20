@@ -40,3 +40,9 @@ export const influencerGetConvoSchema = z.object({
 export const getConverationRequestParamsSchema = z.object({
     followerId: z.string().min(1).max(50)
 })
+
+
+export const updateMessageStatusSchema = z.object({
+    messageId: z.string().min(1).max(50),
+    newStatus: z.enum(['delivered', 'received', 'seen'])
+})

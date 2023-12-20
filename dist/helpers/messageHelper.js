@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addNewMessageToDB = exports.addNewConvoToDB = void 0;
+exports.updateMessageStatus = exports.addNewMessageToDB = exports.addNewConvoToDB = void 0;
 const db_1 = require("../db");
 function addNewConvoToDB(defaultMessage, influencerId, followerId) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -33,6 +33,7 @@ function addNewMessageToDB(content, senderId, receiverId, convoId) {
             receiver: receiverId,
             content: content,
             timestamp: Date.now(),
+            messageStatus: 'delivered',
             conversation: convoId
         });
         newMessage = yield newMessage.save();
@@ -40,3 +41,10 @@ function addNewMessageToDB(content, senderId, receiverId, convoId) {
     });
 }
 exports.addNewMessageToDB = addNewMessageToDB;
+function updateMessageStatus(messageId, messageStatus) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const newMessage = yield db_1.Message.findByIdAndUpdate(messageId, { messageStatus }, { returnDocument: "after" });
+        return newMessage;
+    });
+}
+exports.updateMessageStatus = updateMessageStatus;

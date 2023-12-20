@@ -21,6 +21,7 @@ const messageSchema = new mongoose_1.default.Schema({
     receiver: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
     content: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
+    messageStatus: { type: String, required: true, enum: ['delivered', 'received', 'seen'], default: 'delivered' },
     conversation: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Conversation', required: true }
 });
 const conversationSchema = new mongoose_1.default.Schema({

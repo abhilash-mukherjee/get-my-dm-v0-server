@@ -27,6 +27,7 @@ exports.followerRouter.post('/signup', handleSignup);
 exports.followerRouter.post('/login', handleLogin);
 exports.followerRouter.post('/send', auth_1.authenticateFollower, handleSend);
 exports.followerRouter.get('/conversation', auth_1.authenticateFollower, handleConversation);
+exports.followerRouter.patch('/updateMessage', auth_1.authenticateFollower, handleUpdateMessage);
 function handleSignup(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         const parsedInput = zodSchemas_1.followerSignupSchema.safeParse(req.body);
@@ -138,6 +139,32 @@ function handleConversation(req, res) {
                 return (0, errorHandler_1.sendErrorResponse)(res, 'No conversation yet', 404);
             const messages = yield db_1.Message.find({ conversation: convo.id }).sort({ timestamp: 1 });
             res.json({ messages });
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
+        }
+    });
+}
+function handleUpdateMessage(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const parsedInput = zodSchemas_1.updateMessageStatusSchema.safeParse(req.body);
+            if (!parsedInput.success)
+                return (0, errorHandler_1.sendErrorResponse)(res, parsedInput.error.message, 422);
+            const followerId = req.headers.followerId;
+            const { messageId, newStatus } = parsedInput.data;
+            const message = yield db_1.Message.findById(messageId);
+            if (!message) {
+                return (0, errorHandler_1.sendErrorResponse)(res, 'Message not found', 404);
+            }
+            if (message.receiver.toString() !== followerId) {
+                return (0, errorHandler_1.sendErrorResponse)(res, 'Cant change status of this message', 403);
+            }
+            const updatedMessage = yield (0, messageHelper_1.updateMessageStatus)(messageId, newStatus);
+            res.json({
+                message: 'message status updated',
+                updatedMessage
+            });
         }
         catch (error) {
             (0, errorHandler_1.handleError)(error, res);

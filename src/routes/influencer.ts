@@ -1,18 +1,19 @@
 import express from "express";
-import { influencerSendSchema, influencerSignupSchema, userLoginSchema, getConverationRequestParamsSchema } from "../helpers/zodSchemas";
+import { influencerSendSchema, influencerSignupSchema, userLoginSchema, getConverationRequestParamsSchema, updateMessageStatusSchema } from "../helpers/zodSchemas";
 import { Conversation, Message, User } from '../db'
 import { UserRole } from "../helpers/enums";
 import crypto from 'crypto'
 import { generateJWT } from "../helpers/generateJWT";
 import { authenticateInfluencer } from "../middlewares/auth";
 import { handleError, sendErrorResponse } from "../helpers/errorHandler";
-import { addNewMessageToDB } from "../helpers/messageHelper";
+import { addNewMessageToDB, updateMessageStatus } from "../helpers/messageHelper";
 export const influencerRouter = express.Router();
 
 influencerRouter.post('/signup', handleSignup);
 influencerRouter.post('/login', handleLogin);
 influencerRouter.get('/me', authenticateInfluencer, handleMe);
 influencerRouter.post('/send', authenticateInfluencer, handleSend);
+influencerRouter.patch('/updateMessage', authenticateInfluencer, handleUpdateMessage);
 influencerRouter.get('/conversations', authenticateInfluencer, handleConversations);
 influencerRouter.get('/conversations/:followerId', authenticateInfluencer, handleConversationsId);
 influencerRouter.get('/:slug', handleSlug);
@@ -211,6 +212,30 @@ async function handleConversationsId(req: express.Request, res: express.Response
             conversation: convo.id
         }).sort({ timestamp: 1 });
         res.json({ messages });
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
+
+async function handleUpdateMessage(req: express.Request, res: express.Response) {
+    try {
+        const parsedInput = updateMessageStatusSchema.safeParse(req.body);
+        if (!parsedInput.success) return sendErrorResponse(res, parsedInput.error.message, 422);
+        const influencerId = req.headers.influencerId as string;
+        const { messageId, newStatus } = parsedInput.data;
+        const message = await Message.findById(messageId)
+        if (!message) {
+            return sendErrorResponse(res, 'Message not found', 404);
+        }
+        if(message.receiver.toString() !== influencerId){
+            return sendErrorResponse(res, 'Cant change status of this message', 403);
+        }
+        const updatedMessage = await updateMessageStatus(messageId,newStatus);
+        res.json({
+            message: 'message status updated',
+            updatedMessage
+        });
     }
     catch (error) {
         handleError(error, res);

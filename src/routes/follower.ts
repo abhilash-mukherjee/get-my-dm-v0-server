@@ -1,8 +1,8 @@
 import express from "express";
-import { followerSignupSchema, userLoginSchema, followerSendSchema, followerGetConvoSchema } from "../helpers/zodSchemas";
+import { followerSignupSchema, userLoginSchema, followerSendSchema, followerGetConvoSchema, updateMessageStatusSchema } from "../helpers/zodSchemas";
 import { Conversation, Message, User } from '../db'
 import { UserRole } from "../helpers/enums";
-import { addNewMessageToDB, addNewConvoToDB } from "../helpers/messageHelper";
+import { addNewMessageToDB, addNewConvoToDB, updateMessageStatus } from "../helpers/messageHelper";
 import crypto from 'crypto'
 import { generateJWT } from "../helpers/generateJWT";
 import { authenticateFollower, authenticateInfluencer } from "../middlewares/auth";
@@ -12,6 +12,7 @@ followerRouter.post('/signup', handleSignup);
 followerRouter.post('/login', handleLogin);
 followerRouter.post('/send', authenticateFollower, handleSend);
 followerRouter.get('/conversation', authenticateFollower, handleConversation);
+followerRouter.patch('/updateMessage', authenticateFollower, handleUpdateMessage);
 
 async function handleSignup(req: express.Request, res: express.Response) {
     const parsedInput = followerSignupSchema.safeParse(req.body);
@@ -118,6 +119,30 @@ async function handleConversation(req: express.Request, res: express.Response) {
         if(!convo) return sendErrorResponse(res, 'No conversation yet', 404);
         const messages = await Message.find({conversation: convo.id}).sort({ timestamp: 1 });
         res.json({ messages  });
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
+
+async function handleUpdateMessage(req: express.Request, res: express.Response) {
+    try {
+        const parsedInput = updateMessageStatusSchema.safeParse(req.body);
+        if (!parsedInput.success) return sendErrorResponse(res, parsedInput.error.message, 422);
+        const followerId = req.headers.followerId as string;
+        const { messageId, newStatus } = parsedInput.data;
+        const message = await Message.findById(messageId)
+        if (!message) {
+            return sendErrorResponse(res, 'Message not found', 404);
+        }
+        if(message.receiver.toString() !== followerId){
+            return sendErrorResponse(res, 'Cant change status of this message', 403);
+        }
+        const updatedMessage = await updateMessageStatus(messageId,newStatus);
+        res.json({
+            message: 'message status updated',
+            updatedMessage
+        });
     }
     catch (error) {
         handleError(error, res);

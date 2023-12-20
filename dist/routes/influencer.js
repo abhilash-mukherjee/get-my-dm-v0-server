@@ -27,6 +27,7 @@ exports.influencerRouter.post('/signup', handleSignup);
 exports.influencerRouter.post('/login', handleLogin);
 exports.influencerRouter.get('/me', auth_1.authenticateInfluencer, handleMe);
 exports.influencerRouter.post('/send', auth_1.authenticateInfluencer, handleSend);
+exports.influencerRouter.patch('/updateMessage', auth_1.authenticateInfluencer, handleUpdateMessage);
 exports.influencerRouter.get('/conversations', auth_1.authenticateInfluencer, handleConversations);
 exports.influencerRouter.get('/conversations/:followerId', auth_1.authenticateInfluencer, handleConversationsId);
 exports.influencerRouter.get('/:slug', handleSlug);
@@ -234,6 +235,32 @@ function handleConversationsId(req, res) {
                 conversation: convo.id
             }).sort({ timestamp: 1 });
             res.json({ messages });
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
+        }
+    });
+}
+function handleUpdateMessage(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const parsedInput = zodSchemas_1.updateMessageStatusSchema.safeParse(req.body);
+            if (!parsedInput.success)
+                return (0, errorHandler_1.sendErrorResponse)(res, parsedInput.error.message, 422);
+            const influencerId = req.headers.influencerId;
+            const { messageId, newStatus } = parsedInput.data;
+            const message = yield db_1.Message.findById(messageId);
+            if (!message) {
+                return (0, errorHandler_1.sendErrorResponse)(res, 'Message not found', 404);
+            }
+            if (message.receiver.toString() !== influencerId) {
+                return (0, errorHandler_1.sendErrorResponse)(res, 'Cant change status of this message', 403);
+            }
+            const updatedMessage = yield (0, messageHelper_1.updateMessageStatus)(messageId, newStatus);
+            res.json({
+                message: 'message status updated',
+                updatedMessage
+            });
         }
         catch (error) {
             (0, errorHandler_1.handleError)(error, res);
