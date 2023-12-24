@@ -12,6 +12,7 @@ followerRouter.post('/signup', handleSignup);
 followerRouter.post('/login', handleLogin);
 followerRouter.post('/send', authenticateFollower, handleSend);
 followerRouter.get('/conversation', authenticateFollower, handleConversation);
+followerRouter.get('/me', authenticateFollower, handleMe);
 followerRouter.patch('/updateMessage', authenticateFollower, handleUpdateMessage);
 
 async function handleSignup(req: express.Request, res: express.Response) {
@@ -143,6 +144,16 @@ async function handleUpdateMessage(req: express.Request, res: express.Response) 
             message: 'message status updated',
             updatedMessage
         });
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
+
+async function handleMe(req: express.Request, res: express.Response) {
+    try {
+        const followerId = req.headers.followerId as string;
+        res.json({ followerId });
     }
     catch (error) {
         handleError(error, res);

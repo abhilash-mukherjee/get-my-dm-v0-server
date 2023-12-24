@@ -22,10 +22,20 @@ export async function addNewMessageToDB(content: string, senderId: string, recei
         conversation: convoId
     });
     newMessage = await newMessage.save();
+    try {
+        await Conversation.findByIdAndUpdate(convoId,
+            {
+                updated_at: Date.now()
+            }
+        )
+    }
+    catch (e) {
+        console.log('error occured while modifying updated_at of convo: ', convoId)
+    }
     return newMessage;
 }
 
 export async function updateMessageStatus(messageId: string, messageStatus: string) {
-    const newMessage = await Message.findByIdAndUpdate(messageId, { messageStatus },{returnDocument: "after"});
+    const newMessage = await Message.findByIdAndUpdate(messageId, { messageStatus }, { returnDocument: "after" });
     return newMessage;
 }

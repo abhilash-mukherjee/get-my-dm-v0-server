@@ -37,6 +37,14 @@ function addNewMessageToDB(content, senderId, receiverId, convoId) {
             conversation: convoId
         });
         newMessage = yield newMessage.save();
+        try {
+            yield db_1.Conversation.findByIdAndUpdate(convoId, {
+                updated_at: Date.now()
+            });
+        }
+        catch (e) {
+            console.log('error occured while modifying updated_at of convo: ', convoId);
+        }
         return newMessage;
     });
 }

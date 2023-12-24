@@ -27,6 +27,7 @@ exports.followerRouter.post('/signup', handleSignup);
 exports.followerRouter.post('/login', handleLogin);
 exports.followerRouter.post('/send', auth_1.authenticateFollower, handleSend);
 exports.followerRouter.get('/conversation', auth_1.authenticateFollower, handleConversation);
+exports.followerRouter.get('/me', auth_1.authenticateFollower, handleMe);
 exports.followerRouter.patch('/updateMessage', auth_1.authenticateFollower, handleUpdateMessage);
 function handleSignup(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -165,6 +166,17 @@ function handleUpdateMessage(req, res) {
                 message: 'message status updated',
                 updatedMessage
             });
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
+        }
+    });
+}
+function handleMe(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const followerId = req.headers.followerId;
+            res.json({ followerId });
         }
         catch (error) {
             (0, errorHandler_1.handleError)(error, res);
