@@ -176,7 +176,7 @@ function handleMe(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const followerId = req.headers.followerId;
-            res.json({ followerId });
+            res.json({ message: 'follower valid', followerId });
         }
         catch (error) {
             (0, errorHandler_1.handleError)(error, res);

@@ -153,7 +153,7 @@ async function handleUpdateMessage(req: express.Request, res: express.Response) 
 async function handleMe(req: express.Request, res: express.Response) {
     try {
         const followerId = req.headers.followerId as string;
-        res.json({ followerId });
+        res.json({message: 'follower valid' , followerId });
     }
     catch (error) {
         handleError(error, res);
