@@ -11,7 +11,7 @@ export const followerRouter = express.Router();
 followerRouter.post('/signup', handleSignup);
 followerRouter.post('/login', handleLogin);
 followerRouter.post('/send', authenticateFollower, handleSend);
-followerRouter.get('/conversation', authenticateFollower, handleConversation);
+followerRouter.get('/conversation/:influencerId', authenticateFollower, handleConversation);
 followerRouter.get('/me', authenticateFollower, handleMe);
 followerRouter.patch('/updateMessage', authenticateFollower, handleUpdateMessage);
 
@@ -109,7 +109,7 @@ async function handleSend(req: express.Request, res: express.Response) {
 
 async function handleConversation(req: express.Request, res: express.Response) {
     try {
-        const parsedInput = followerGetConvoSchema.safeParse(req.body);
+        const parsedInput = followerGetConvoSchema.safeParse(req.params);
         if (!parsedInput.success) return sendErrorResponse(res, parsedInput.error.message, 422);
         const followerId = req.headers.followerId as string;
         const influencerId = parsedInput.data.influencerId;

@@ -26,7 +26,7 @@ exports.followerRouter = express_1.default.Router();
 exports.followerRouter.post('/signup', handleSignup);
 exports.followerRouter.post('/login', handleLogin);
 exports.followerRouter.post('/send', auth_1.authenticateFollower, handleSend);
-exports.followerRouter.get('/conversation', auth_1.authenticateFollower, handleConversation);
+exports.followerRouter.get('/conversation/:influencerId', auth_1.authenticateFollower, handleConversation);
 exports.followerRouter.get('/me', auth_1.authenticateFollower, handleMe);
 exports.followerRouter.patch('/updateMessage', auth_1.authenticateFollower, handleUpdateMessage);
 function handleSignup(req, res) {
@@ -127,7 +127,7 @@ function handleSend(req, res) {
 function handleConversation(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const parsedInput = zodSchemas_1.followerGetConvoSchema.safeParse(req.body);
+            const parsedInput = zodSchemas_1.followerGetConvoSchema.safeParse(req.params);
             if (!parsedInput.success)
                 return (0, errorHandler_1.sendErrorResponse)(res, parsedInput.error.message, 422);
             const followerId = req.headers.followerId;
