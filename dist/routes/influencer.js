@@ -30,6 +30,7 @@ exports.influencerRouter.post('/send', auth_1.authenticateInfluencer, handleSend
 exports.influencerRouter.patch('/updateMessage', auth_1.authenticateInfluencer, handleUpdateMessage);
 exports.influencerRouter.get('/conversations', auth_1.authenticateInfluencer, handleConversations);
 exports.influencerRouter.get('/conversations/:followerId', auth_1.authenticateInfluencer, handleConversationsId);
+exports.influencerRouter.get('/all', handleAll);
 exports.influencerRouter.get('/:slug', handleSlug);
 function handleSignup(req, res) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -112,7 +113,8 @@ function handleMe(req, res) {
             res.json({
                 fullName: influencer === null || influencer === void 0 ? void 0 : influencer.fullName,
                 id: influencer === null || influencer === void 0 ? void 0 : influencer.id,
-                slug: influencer === null || influencer === void 0 ? void 0 : influencer.slug
+                slug: influencer === null || influencer === void 0 ? void 0 : influencer.slug,
+                imageUrl: influencer === null || influencer === void 0 ? void 0 : influencer.imageUrl,
             });
         }
         catch (error) {
@@ -129,8 +131,36 @@ function handleSlug(req, res) {
                     fullName: influencer.fullName,
                     bio: influencer.bio,
                     defaultMessage: influencer.defaultMessage,
-                    id: influencer.id
+                    id: influencer.id,
+                    imageUrl: influencer.imageUrl,
+                    slug: influencer.slug,
                 });
+            }
+            else {
+                res.status(403).json({ error: 'influencer not found' });
+            }
+        }
+        catch (error) {
+            (0, errorHandler_1.handleError)(error, res);
+        }
+    });
+}
+function handleAll(req, res) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const influencers = yield db_1.User.find({ role: enums_1.UserRole.Influencer });
+            if (influencers) {
+                const response = influencers.map((influencer) => {
+                    return ({
+                        fullName: influencer.fullName,
+                        bio: influencer.bio,
+                        defaultMessage: influencer.defaultMessage,
+                        id: influencer.id,
+                        imageUrl: influencer.imageUrl,
+                        slug: influencer.slug,
+                    });
+                });
+                return res.json({ influencers: response });
             }
             else {
                 res.status(403).json({ error: 'influencer not found' });

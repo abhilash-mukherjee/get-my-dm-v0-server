@@ -13,6 +13,7 @@ const userSchema = new mongoose_1.default.Schema({
     role: { type: String, required: true, enum: Object.values(enums_1.UserRole) },
     bio: { type: String },
     defaultMessage: { type: String },
+    imageUrl: { type: String },
     slug: { type: String, unique: true, sparse: true, default: null,
         set: (v) => v === '' ? null : v },
 });

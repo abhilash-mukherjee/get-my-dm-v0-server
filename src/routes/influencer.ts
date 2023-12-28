@@ -16,6 +16,7 @@ influencerRouter.post('/send', authenticateInfluencer, handleSend);
 influencerRouter.patch('/updateMessage', authenticateInfluencer, handleUpdateMessage);
 influencerRouter.get('/conversations', authenticateInfluencer, handleConversations);
 influencerRouter.get('/conversations/:followerId', authenticateInfluencer, handleConversationsId);
+influencerRouter.get('/all', handleAll);
 influencerRouter.get('/:slug', handleSlug);
 async function handleSignup(req: express.Request, res: express.Response) {
     const parsedInput = influencerSignupSchema.safeParse(req.body);
@@ -95,7 +96,8 @@ async function handleMe(req: express.Request, res: express.Response) {
         res.json({
             fullName: influencer?.fullName,
             id: influencer?.id,
-            slug: influencer?.slug
+            slug: influencer?.slug,
+            imageUrl: influencer?.imageUrl,
         })
     }
     catch (error) {
@@ -110,8 +112,35 @@ async function handleSlug(req: express.Request, res: express.Response) {
                 fullName: influencer.fullName,
                 bio: influencer.bio,
                 defaultMessage: influencer.defaultMessage,
-                id: influencer.id
+                id: influencer.id,
+                imageUrl: influencer.imageUrl,
+                slug: influencer.slug,
             })
+        }
+        else {
+            res.status(403).json({ error: 'influencer not found' })
+        }
+    }
+    catch (error) {
+        handleError(error, res);
+    }
+}
+
+async function handleAll(req: express.Request, res: express.Response) {
+    try {
+        const influencers = await User.find({ role: UserRole.Influencer });
+        if (influencers) {
+            const response = influencers.map((influencer)=>{
+                return ({
+                    fullName: influencer.fullName,
+                    bio: influencer.bio,
+                    defaultMessage: influencer.defaultMessage,
+                    id: influencer.id,
+                    imageUrl: influencer.imageUrl,
+                    slug:influencer.slug,
+                })
+            })
+            return res.json({influencers : response});
         }
         else {
             res.status(403).json({ error: 'influencer not found' })
